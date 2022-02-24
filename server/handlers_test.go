@@ -120,3 +120,39 @@ func TestGetSubst(t *testing.T) {
 	require.Equal(t, expected, actual)
 
 }
+
+func TestFindStr(t *testing.T) {
+	testserver := NewTestServer(t)
+
+	testCase := []string{"rest", "counter", "find"}
+
+	expected := [][]string{
+		{"/rest/counter/add/:i", "/rest/counter/sub/:i", "/rest/substr/find", "/rest/self/find/:str", "/rest/counter/val"},
+		{"/rest/counter/add/:i", "/rest/counter/sub/:i", "/rest/counter/val"},
+		{"/rest/substr/find", "/rest/self/find/:str"},
+	}
+
+	actual := make([]string, 0)
+
+	for i, test := range testCase {
+		ts := httptest.NewServer(testserver.router)
+		defer ts.Close()
+
+		w := httptest.NewRecorder()
+
+		log.Println("test:#", i)
+		req, err := http.NewRequest("POST", fmt.Sprint(ts.URL, "/rest/self/find/", test), nil)
+		if err != nil {
+			break
+		}
+		require.NoError(t, err)
+
+		testserver.router.ServeHTTP(w, req)
+
+		err = json.Unmarshal(w.Body.Bytes(), &actual)
+		log.Println("err", err)
+		require.NoError(t, err)
+
+		require.Equal(t, expected[i], actual)
+	}
+}
