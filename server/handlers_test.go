@@ -201,5 +201,52 @@ func TestCheckEmail(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, expected, actual)
-	// }
+}
+
+func TestCheckInn(t *testing.T) {
+	testserver := NewTestServer(t)
+
+	testCase := BodyInn{
+		Numbers: []string{
+			"122346345321",
+			"741223250985",
+			"110867325642",
+			"313525235215",
+			"614309291796",
+			"259789431243",
+			"134264324565",
+			"643445745331",
+		},
+	}
+
+	type ExpectedBody struct {
+		Valid_inn []string `json:"valid_inn"`
+	}
+
+	expected := ExpectedBody{}
+	expected.Valid_inn = []string{"614309291796"}
+
+	jsonbody, err := json.Marshal(testCase)
+	require.NoError(t, err)
+
+	actual := ExpectedBody{}
+
+	ts := httptest.NewServer(testserver.router)
+	defer ts.Close()
+
+	w := httptest.NewRecorder()
+
+	req, err := http.NewRequest("POST", fmt.Sprint(ts.URL, "/rest/inn/check/"), bytes.NewBuffer(jsonbody))
+	if err != nil {
+		t.Error(err)
+	}
+	require.NoError(t, err)
+
+	testserver.router.ServeHTTP(w, req)
+
+	err = json.Unmarshal(w.Body.Bytes(), &actual)
+	require.NoError(t, err)
+
+	require.Equal(t, expected, actual)
+
 }
