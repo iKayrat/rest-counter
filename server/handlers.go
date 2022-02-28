@@ -1,8 +1,6 @@
 package server
 
 import (
-	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -19,9 +17,10 @@ type Count struct {
 	Counter int64 `json:"counter"`
 }
 
-type Substr struct {
+type Body struct {
 	Text string `json:"text"`
 }
+
 type RespBody struct {
 	Text string `json:"text"`
 	Len  int    `json:"len"`
@@ -87,18 +86,12 @@ func (s *Server) getCounter(ctx *gin.Context) {
 //substr
 func (s *Server) getSubstr(ctx *gin.Context) {
 
-	substr := Substr{}
+	substr := Body{}
 
-	body, err := ioutil.ReadAll(ctx.Request.Body)
-	if err != nil {
+	if err := ctx.BindJSON(&substr); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
-	}
 
-	err = json.Unmarshal(body, &substr)
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
 	}
 
 	str := substr.Text

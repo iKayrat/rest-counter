@@ -18,8 +18,15 @@ func NewServer(redis *db.Store) *Server {
 	router.POST("rest/counter/add/:i", server.addCounter)
 	router.POST("rest/counter/sub/:i", server.subCounter)
 	router.GET("rest/counter/val", server.getCounter)
+
 	router.POST("rest/substr/find", server.getSubstr)
 	router.POST("rest/self/find/:str", server.findStr)
+
+	router.POST("rest/hash/calc", server.genHash)
+	router.GET("rest/hash/result/:id", server.getHash)
+
+	router.POST("rest/email/check/", server.chekEmail)
+	router.POST("rest/inn/check/", server.checkINN)
 
 	server.router = router
 

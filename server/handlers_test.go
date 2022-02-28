@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -100,11 +99,11 @@ func TestGetSubst(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	body := Substr{Text: "AaBbCcDadABCDghj"}
+	body := Body{Text: "AaBbCcDadABCDghj"}
 
 	jsonbody, err := json.Marshal(body)
 	require.NoError(t, err)
-	log.Println(string(jsonbody), err)
+	// log.Println(string(jsonbody), err)
 
 	req, err := http.NewRequest("POST", ts.URL+"/rest/substr/find", bytes.NewBuffer(jsonbody))
 	require.NoError(t, err)
@@ -127,7 +126,7 @@ func TestFindStr(t *testing.T) {
 	testCase := []string{"rest", "counter", "find"}
 
 	expected := [][]string{
-		{"/rest/counter/add/:i", "/rest/counter/sub/:i", "/rest/substr/find", "/rest/self/find/:str", "/rest/counter/val"},
+		{"/rest/counter/add/:i", "/rest/counter/sub/:i", "/rest/substr/find", "/rest/self/find/:str", "/rest/hash/calc", "/rest/email/check/", "/rest/inn/check/", "/rest/counter/val", "/rest/hash/result/:id"},
 		{"/rest/counter/add/:i", "/rest/counter/sub/:i", "/rest/counter/val"},
 		{"/rest/substr/find", "/rest/self/find/:str"},
 	}
@@ -140,7 +139,7 @@ func TestFindStr(t *testing.T) {
 
 		w := httptest.NewRecorder()
 
-		log.Println("test:#", i)
+		// log.Println("test:#", i)
 		req, err := http.NewRequest("POST", fmt.Sprint(ts.URL, "/rest/self/find/", test), nil)
 		if err != nil {
 			break
@@ -150,9 +149,57 @@ func TestFindStr(t *testing.T) {
 		testserver.router.ServeHTTP(w, req)
 
 		err = json.Unmarshal(w.Body.Bytes(), &actual)
-		log.Println("err", err)
+		// log.Println("err", err)
 		require.NoError(t, err)
 
 		require.Equal(t, expected[i], actual)
 	}
+}
+
+func TestCheckEmail(t *testing.T) {
+	testserver := NewTestServer(t)
+
+	testCase := BodyEmail{
+		Emails: []string{
+			"text@text.com",
+			"texttext.com",
+			"test@test.ru",
+			"ttc@",
+			"_dfs32452*.&%#^~!@#$%^&*()(*&@gmai.com",
+			"safe@life.com",
+		},
+	}
+
+	type ExpectedBody struct {
+		Valid_emails []string `json:"valid_emails"`
+	}
+
+	expected := ExpectedBody{}
+
+	expected.Valid_emails = []string{"text@text.com", "test@test.ru", "safe@life.com"}
+
+	jsonbody, err := json.Marshal(testCase)
+	require.NoError(t, err)
+
+	// actual := make([]string, 0)
+	actual := ExpectedBody{}
+
+	ts := httptest.NewServer(testserver.router)
+	defer ts.Close()
+
+	w := httptest.NewRecorder()
+
+	req, err := http.NewRequest("POST", fmt.Sprint(ts.URL, "/rest/email/check/"), bytes.NewBuffer(jsonbody))
+	if err != nil {
+		t.Error(err)
+	}
+	require.NoError(t, err)
+
+	testserver.router.ServeHTTP(w, req)
+
+	err = json.Unmarshal(w.Body.Bytes(), &actual)
+	require.NoError(t, err)
+
+	require.Equal(t, expected, actual)
+	// }
 }
